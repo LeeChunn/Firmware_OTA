@@ -12,6 +12,7 @@ const char* password = "1234567890";
 
 // Github firmware URL
 const char* firmware_url = "https://raw.githubusercontent.com/son-dohoang/ota_firmware/main/firmware.bin";
+// const char* firmware_url = "https://raw.githubusercontent.com/LeeChunn/Firmware_OTA/main/.pio/build/esp32-s3-devkitm-1/firmware.bin";
 
 // Thêm biến toàn cục để theo dõi thời gian
 unsigned long updateStartTime = 0;
@@ -42,7 +43,7 @@ void update_error(int err) {
 void setup() {
     Serial.begin(115200);
     Serial.println("Starting OTA Update Example");
-    
+    while(1);
     // Connect to WiFi
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
