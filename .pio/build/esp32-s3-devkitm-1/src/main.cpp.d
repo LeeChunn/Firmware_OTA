@@ -293,4 +293,12 @@
  C:/Users/chung/.platformio/packages/framework-arduinoespressif32/libraries/Update/src/Update.h \
  C:/Users/chung/.platformio/packages/framework-arduinoespressif32/cores/esp32/MD5Builder.h \
  C:/Users/chung/.platformio/packages/framework-arduinoespressif32/cores/esp32/HashBuilder.h \
- C:/Users/chung/.platformio/packages/framework-arduinoespressif32/cores/esp32/HEXBuilder.h
+ C:/Users/chung/.platformio/packages/framework-arduinoespressif32/cores/esp32/HEXBuilder.h \
+ C:/Users/chung/.platformio/packages/framework-arduinoespressif32/libraries/PPP/src/PPP.h \
+ C:/Users/chung/.platformio/packages/framework-arduinoespressif32-libs/esp32s3/include/espressif__esp_modem/include/esp_modem_c_api_types.h \
+ C:/Users/chung/.platformio/packages/framework-arduinoespressif32-libs/esp32s3/include/espressif__esp_modem/include/esp_modem_config.h \
+ C:/Users/chung/.platformio/packages/framework-arduinoespressif32-libs/esp32s3/include/driver/uart/include/driver/uart.h \
+ C:/Users/chung/.platformio/packages/framework-arduinoespressif32-libs/esp32s3/include/espressif__esp_modem/include/esp_modem_dce_config.h \
+ C:/Users/chung/.platformio/packages/framework-arduinoespressif32-libs/esp32s3/include/esp_netif/include/esp_netif.h \
+ C:/Users/chung/.platformio/packages/framework-arduinoespressif32-libs/esp32s3/include/esp_netif/include/esp_netif_types.h \
+ C:/Users/chung/.platformio/packages/framework-arduinoespressif32-libs/esp32s3/include/esp_netif/include/esp_netif_defaults.h

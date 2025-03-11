@@ -7,6 +7,7 @@
 #include <HTTPUpdate.h>
 #include <Update.h>
 #include <esp_system.h>
+#include <PPP.h>
 
 // WiFi credentials
 const char* ssid = "ROUTERCLUB";
@@ -14,6 +15,17 @@ const char* password = "1234567890";
 
 // Link OTA firmware
 const char* firmware_url = "https://raw.githubusercontent.com/LeeChunn/Firmware_OTA/main/.pio/build/esp32-s3-devkitm-1/firmware.bin";
+
+// PPP Modem Configuration
+#define PPP_MODEM_APN "v-internet"
+#define PPP_MODEM_RST 33
+#define PPP_MODEM_TX 18
+#define PPP_MODEM_RX 17
+#define PPP_MODEM_FC ESP_MODEM_FLOW_CONTROL_NONE
+#define PPP_MODEM_MODEL PPP_MODEM_GENERIC
+
+// Chân 46
+#define PIN_46 46
 
 // Biến theo dõi thời gian cập nhật
 unsigned long updateStartTime = 0;
@@ -28,6 +40,8 @@ void update_progress(int cur, int total);
 void update_error(int err);
 void handle_uart_command();
 void perform_ota_update();
+void perform_ota_update_ppp();
+void onPPPEvent(arduino_event_id_t event, arduino_event_info_t info);
 
 void check_reset_reason() {
     esp_reset_reason_t reason = esp_reset_reason();
@@ -95,10 +109,35 @@ void update_error(int err) {
     ESP.restart();
 }
 
+void onPPPEvent(arduino_event_id_t event, arduino_event_info_t info) {
+    switch (event) {
+        case ARDUINO_EVENT_PPP_START:
+            Serial.println("PPP Started");
+            break;
+        case ARDUINO_EVENT_PPP_CONNECTED:
+            Serial.println("PPP Connected");
+            break;
+        case ARDUINO_EVENT_PPP_GOT_IP:
+            Serial.println("PPP Got IP");
+            break;
+        case ARDUINO_EVENT_PPP_LOST_IP:
+            Serial.println("PPP Lost IP");
+            break;
+        case ARDUINO_EVENT_PPP_DISCONNECTED:
+            Serial.println("PPP Disconnected");
+            break;
+        case ARDUINO_EVENT_PPP_STOP:
+            Serial.println("PPP Stopped");
+            break;
+        default:
+            break;
+    }
+}
+
 void setup() {
     Serial.begin(115200);
     Serial.println("Bắt đầu chương trình ESP32 OTA");
-    Serial.println("======================V1.0======================");
+    Serial.println("======================V2.0======================");
 
     // Kiểm tra lý do reset
     check_reset_reason();
@@ -126,6 +165,48 @@ void setup() {
     Serial.println("\nKết nối WiFi thành công!");
     Serial.print("Địa chỉ IP: ");
     Serial.println(WiFi.localIP());
+
+    // Initialize PPP modem
+    pinMode(PPP_MODEM_RST, OUTPUT);
+    digitalWrite(PPP_MODEM_RST, HIGH);
+    pinMode(PIN_46, OUTPUT);
+    digitalWrite(PIN_46, HIGH);
+
+    Network.onEvent(onPPPEvent);
+    PPP.setApn(PPP_MODEM_APN);
+    PPP.setPins(PPP_MODEM_TX, PPP_MODEM_RX);
+
+    Serial.println("Starting modem...");
+    if (!PPP.begin(PPP_MODEM_MODEL)) {
+        Serial.println("Failed to start modem!");
+        return;
+    }
+
+    // Wait for network attachment
+    bool attached = PPP.attached();
+    if (!attached) {
+        Serial.print("Waiting for network");
+        int attempts = 0;
+        while (!attached && attempts < 60) {
+            Serial.print(".");
+            delay(1000);
+            attached = PPP.attached();
+            attempts++;
+        }
+        Serial.println();
+    }
+
+    if (attached) {
+        Serial.println("Network attached! Switching to data mode...");
+        PPP.mode(ESP_MODEM_MODE_DATA);
+        if (PPP.waitStatusBits(ESP_NETIF_CONNECTED_BIT, 10000)) {
+            Serial.println("Connected to internet!");
+        } else {
+            Serial.println("Failed to connect to internet!");
+        }
+    } else {
+        Serial.println("Failed to attach to network!");
+    }
 }
 
 void handle_uart_command() {
@@ -176,7 +257,46 @@ void perform_ota_update() {
     }
 }
 
+void perform_ota_update_ppp() {
+    if (PPP.connected()) {
+        NetworkClientSecure client;
+        client.setInsecure(); // Skip SSL verification
+
+        httpUpdate.onStart(update_started);
+        httpUpdate.onEnd(update_finished);
+        httpUpdate.onProgress(update_progress);
+        httpUpdate.onError(update_error);
+        Serial.println("Checking for firmware updates...");
+        t_httpUpdate_return ret = httpUpdate.update(client, "https://raw.githubusercontent.com/son-dohoang/ota_firmware/main/firmware.bin");
+
+        switch (ret) {
+            case HTTP_UPDATE_FAILED:
+                Serial.printf("HTTP_UPDATE_FAILED Error (%d): %s\n",
+                              httpUpdate.getLastError(),
+                              httpUpdate.getLastErrorString().c_str());
+                break;
+
+            case HTTP_UPDATE_NO_UPDATES:
+                Serial.println("HTTP_UPDATE_NO_UPDATES");
+                break;
+
+            case HTTP_UPDATE_OK:
+                Serial.println("HTTP_UPDATE_OK");
+                break;
+        }
+    } else {
+        Serial.println("Not connected to internet");
+    }
+}
+
 void loop() {
     handle_uart_command();
     delay(100); // Đợi một chút trước khi kiểm tra lệnh UART tiếp theo
+
+    // Check for updates via PPP every 30 seconds
+    static unsigned long lastCheck = 0;
+    if (millis() - lastCheck > 30000) {
+        lastCheck = millis();
+        perform_ota_update_ppp();
+    }
 }
