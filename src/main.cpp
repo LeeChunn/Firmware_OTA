@@ -98,6 +98,7 @@ void update_error(int err) {
 void setup() {
     Serial.begin(115200);
     Serial.println("Bắt đầu chương trình ESP32 OTA");
+    Serial.println("======================V1.0======================");
 
     // Kiểm tra lý do reset
     check_reset_reason();
